@@ -92,6 +92,44 @@ class Graph:
                 return True
         return False
 
+    def find_cycle(self):
+        answer = False
+        n = len(self.graph)
+        used = [0 for _ in range(n)]
+        points = []
+        ans_points = []
+        def dfs(v):
+            global answer, pred, ppp
+            used[v] = 1
+            points.append(v + 1)
+            for i in range(n):
+                if not answer:
+                    if i == pred:
+                        continue
+                    elif self.graph[v][i] == 1 and used[i] == 0:
+                        pred = v
+                        dfs(i)
+                    elif used[i] == 1 and self.graph[v][i] == 1:
+                        for item in points[::-1]:
+                            ans_points.append(item)
+                            if item == i + 1:
+                                break
+                        answer = True
+                        break
+            del points[-1]
+            used[v] = 2
+
+        for i in reversed(range(n)):
+            if answer:
+                break
+            points = []
+            dfs(i)
+        if answer:
+            print(len(ans_points))
+            return ans_points[::-1]
+        else:
+            return False
+
     def shortest_path(self, start, end):
         if start not in self.graph or end not in self.graph:
             return None
@@ -170,7 +208,7 @@ class WeightedGraph(Graph):
         ]
         """
 
-    def shortest_distance(self, start, end):
+    def shortest_path(self, start, end):
         """
         Находит кратчайшее растояние между двумя вершинами с использованием алгоритма Дейкстры.
 
@@ -207,3 +245,42 @@ class WeightedGraph(Graph):
                         distances[j] = new_distance
 
         return distances[end] if distances[end] != sys.maxsize else -1
+
+
+
+directed_graph = DirectedGraph()
+directed_graph.add_vertex("1")
+directed_graph.add_vertex("2")
+directed_graph.add_vertex("3")
+directed_graph.add_vertex("4")
+
+directed_graph.add_edge("1", "2")
+directed_graph.add_edge("2", "3")
+directed_graph.add_edge("4", "3")
+directed_graph.add_edge("4", "2")
+
+print(directed_graph.shortest_path('4','1'))
+
+undirected_graph = UndirectedGraph()
+undirected_graph.add_vertex('A')
+undirected_graph.add_vertex('B')
+undirected_graph.add_vertex('C')
+undirected_graph.add_vertex('D')
+undirected_graph.add_edge('A', 'B')
+undirected_graph.add_edge('B', 'C')
+undirected_graph.add_edge('B', 'D')
+#undirected_graph.add_edge('C', 'D')
+print(undirected_graph.shortest_path('D','A'))
+
+
+weighted_graph = WeightedGraph()
+weighted_graph.add_vertex('X')
+weighted_graph.add_vertex('Y')
+weighted_graph.add_vertex('Z')
+weighted_graph.add_edge('X', 'Y', 5)
+weighted_graph.add_edge('Z', 'Y', 2)
+weighted_graph.add_edge('X', 'Z', 1)
+
+print(weighted_graph.has_path('X','Z'))
+print(weighted_graph.has_cycle())
+print(weighted_graph.shortest_distance('X','Y'))
