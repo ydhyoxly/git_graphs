@@ -11,6 +11,7 @@ width, height = 0, 0
 walls = []
 board = []
 
+
 def open_file():
     global cell_size, width, height
     with open('moard_ver2.txt', mode='r', encoding='utf8') as f:
@@ -42,11 +43,11 @@ def load_image(name, colorkey=None):
         image = image.convert_alpha()
     return image
 
+
 class Main:
     def __init__(self, screen):
 
         self.screen = screen
-        pygame.display.set_caption('Герой двигается!')
         running = True
         self.make_board()
         self.draw_board()
@@ -69,9 +70,10 @@ class Main:
                 if event.type == pygame.KEYDOWN:
                     self.move_timer = 0
                     sprites.update(pygame.key.get_pressed())
-            if self.move_timer == fps // 8:
-                self.move_timer = 0
-                sprites.update(pygame.key.get_pressed())
+            self.screen.fill('black')
+            # if self.move_timer == fps // 8:
+            #     self.move_timer = 0
+            #     sprites.update(pygame.key.get_pressed())
             sprites.draw(self.screen)
             self.draw_board()
             pygame.display.flip()
@@ -120,28 +122,50 @@ class Main:
                                  (left + (i % width + 1) * cell_size,
                                   top + (i // width) * cell_size), 2)
 
+
 class Player(pygame.sprite.Sprite):
     global cell_size
     open_file()
     image = load_image("upg_rabbit.png")
     image = pygame.transform.scale(image, (cell_size, cell_size))
+    image_cat = load_image("cat_run.jpg")
+    image_cat = pygame.transform.scale(image_cat, (cell_size, cell_size))
 
     def __init__(self, *group):
         super().__init__(*group)
-        self.image = Player.image
-        self.rect = self.image.get_rect()
+        self.image_rabbit = Player.image
+        self.rect = self.image_rabbit.get_rect()
+        self.image_cat = Player.image_cat
+
         self.rect.x = 10
         self.rect.y = 50
+        self.location = [-1, 0]
 
     def update(self, keys):
+        global width
         if keys[pygame.K_UP]:
-            self.rect.y -= cell_size
-        if keys[pygame.K_DOWN]:
-            self.rect.y += cell_size
-        if keys[pygame.K_LEFT]:
-            self.rect.x -= cell_size
-        if keys[pygame.K_RIGHT]:
-            self.rect.x += cell_size
+            if ([self.location[0], self.location[1] - 1] in board[self.location[1] * width + self.location[0]]
+                    and self.location != [-1, 0]):
+                self.location[1] -= 1
+                self.rect.y -= cell_size
+        elif keys[pygame.K_DOWN]:
+            if ([self.location[0], self.location[1] + 1] in board[self.location[1] * width + self.location[0]]
+                    and self.location != [-1, 0]):
+                self.location[1] += 1
+                self.rect.y += cell_size
+        elif keys[pygame.K_LEFT]:
+            if ([self.location[0] - 1, self.location[1]] in board[self.location[1] * width + self.location[0]]
+                    and self.location != [-1, 0]):
+                self.location[0] -= 1
+                self.rect.x -= cell_size
+        elif keys[pygame.K_RIGHT]:
+            if [self.location[0] + 1, self.location[1]] in board[self.location[1] * width + self.location[0]] \
+               or self.location == [-1, 0]:
+                self.location[0] += 1
+                self.rect.x += cell_size
+
+    def chase(self, clock):
+        pass
 
 if __name__ == '__main__':
     Main(screen)
