@@ -1,5 +1,5 @@
 import pygame
-
+import collections
 import os
 import sys
 
@@ -10,6 +10,8 @@ left, top, cell_size = 50, 50, 0
 width, height = 0, 0
 walls = []
 board = []
+path = ''
+directory = ''
 
 
 def open_file():
@@ -52,9 +54,14 @@ class Main:
         self.make_board()
         self.draw_board()
         player = Player()
+        enemy = Enemy()
         sprites = pygame.sprite.Group()
         sprites.add(player)
+        sprites.add(enemy)
         self.move_timer = 0
+        MYEVENTTYPE = pygame.USEREVENT + 1
+        start = False
+        pygame.time.set_timer(MYEVENTTYPE, 3000)
 
         fps = 60
         clock = pygame.time.Clock()
@@ -69,7 +76,15 @@ class Main:
                     running = False
                 if event.type == pygame.KEYDOWN:
                     self.move_timer = 0
-                    sprites.update(pygame.key.get_pressed())
+                    player.update(pygame.key.get_pressed())
+                    rer = player.get_location()
+                    Enemy().update([0, 0], rer)
+
+                if event.type == MYEVENTTYPE:
+                    print(start)
+                    start = True
+            if start:
+                enemy.move()
             self.screen.fill('black')
             # if self.move_timer == fps // 8:
             #     self.move_timer = 0
@@ -94,7 +109,6 @@ class Main:
                     t = False
                 elif board[i][j][0] == i % width - 1 and board[i][j][1] == i // width:
                     l = False
-            print(r, b, l, t)
             walls.append([r, b, l, t])
 
     def draw_board(self):
@@ -128,21 +142,23 @@ class Player(pygame.sprite.Sprite):
     open_file()
     image = load_image("upg_rabbit.png")
     image = pygame.transform.scale(image, (cell_size, cell_size))
-    image_cat = load_image("cat_run.jpg")
-    image_cat = pygame.transform.scale(image_cat, (cell_size, cell_size))
 
     def __init__(self, *group):
         super().__init__(*group)
         self.image_rabbit = Player.image
         self.rect = self.image_rabbit.get_rect()
-        self.image_cat = Player.image_cat
 
         self.rect.x = 10
         self.rect.y = 50
         self.location = [-1, 0]
+        self.start = ''
+
+    def get_location(self):
+        return self.location
 
     def update(self, keys):
         global width
+        self.start = 'start'
         if keys[pygame.K_UP]:
             if ([self.location[0], self.location[1] - 1] in board[self.location[1] * width + self.location[0]]
                     and self.location != [-1, 0]):
@@ -164,8 +180,88 @@ class Player(pygame.sprite.Sprite):
                 self.location[0] += 1
                 self.rect.x += cell_size
 
-    def chase(self, clock):
-        pass
+
+
+class Enemy(pygame.sprite.Sprite):
+    image = load_image("cat_run_upg.png")
+    image = pygame.transform.scale(image, (cell_size, cell_size))
+
+    def __init__(self, *group):
+        super().__init__(*group)
+        global width, height, left, top, cell_size
+        self.width = width
+        self.cell_size = cell_size
+        self.left, self.top = left, top
+        self.image = Enemy.image
+        self.rect = self.image.get_rect()
+        self.rect.x = 50
+        self.rect.y = 50
+        self.location = [0, 0]
+        self.used = ['' for _ in range(width * height)]
+
+    def update(self, location, end):
+        global board, path
+        self.used = ['' for _ in range(width * height)]
+        location = location[1] * self.width + location[0]
+        end = end[1] * self.width + end[0]
+        queue = collections.deque([location])
+        self.used[location] = str(location)
+        while queue:
+            vertex = queue.popleft()
+            for neighbour in board[vertex]:
+                if neighbour != [-1, 0]:
+                    neighbour = neighbour[1] * self.width + neighbour[0]
+                    if self.used[neighbour] == '':
+                        self.used[neighbour] = str(self.used[vertex]) + " " + str(neighbour)
+                        queue.append(neighbour)
+
+                        if neighbour == end:
+                            break
+        path = self.used[end]
+        path = list(map(int, path.split()))
+        for i in range(len(path)):
+            path[i] = [path[i] % self.width, path[i] // self.width]
+
+    def move(self):
+        global directory
+        if len(path) == 1:
+
+            print('end')
+        else:
+            r = path[1]
+            if self.location == r:
+                del path[1]
+
+            elif r[0] == self.location[0] and r[1] == self.location[1] + 1:
+                directory = 'down'
+
+            elif r[0] == self.location[0] and r[1] == self.location[1] - 1:
+                directory = 'up'
+
+            elif r[0] == self.location[0] + 1 and r[1] == self.location[1]:
+                directory = 'right'
+
+            elif r[0] == self.location[0] - 1 and r[1] == self.location[1]:
+                directory = 'left'
+
+            self.location = [(self.rect.x - self.left) // self.cell_size,
+                             (self.rect.y - self.top) // self.cell_size]
+            self.run_cat()
+
+    def run_cat(self):
+        if directory == 'right':
+            self.rect.x += self.cell_size // 20
+        elif directory == 'left':
+            self.rect.x -= self.cell_size // 20
+        elif directory == 'top':
+            self.rect.y -= self.cell_size // 20
+        elif directory == 'down':
+            self.rect.y += self.cell_size // 20
+
+
+
+
+
 
 if __name__ == '__main__':
     Main(screen)
