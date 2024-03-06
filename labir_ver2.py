@@ -12,19 +12,24 @@ walls = []
 board = [[] for i in range(5)]
 path = ''
 end = []
+location = [-1, 0]
 directory = ''
 flag_run = 0
 number = 0
+new_game = True
 
 
 def open_file():
     global number
-    global cell_size, width, height
+    global cell_size, width, height, board
+    board = [[] for _ in range(5)]
     with open('moard_ver2.txt', mode='r', encoding='utf8') as f:
         lab = f.readlines()
     width, height, cell_size = map(int, lab[0].split())
     new = 1
+    number = 0
     for i in range(len(lab)):
+        ar = True
         if new:
             side = lab[i].split()
             new = 0
@@ -33,6 +38,7 @@ def open_file():
             if lab[i][0] == '*':
                 number += 1
                 new = 1
+                ar = False
             else:
                 if i != len(lab) - 1:
                     side = lab[i][:-1].split(';')
@@ -40,7 +46,8 @@ def open_file():
                     side = lab[i].split(';')
                 for j in range(len(side)):
                     side[j] = list(map(int, side[j].split(', ')))
-        board[number].append(side)
+        if ar:
+            board[number].append(side)
     print(board[0])
     number = 0
 
@@ -63,7 +70,7 @@ def load_image(name, colorkey=None):
 
 class Main:
     def __init__(self, screen):
-        global flag_run
+        global flag_run, new_game
 
         self.screen = screen
         running = True
@@ -84,13 +91,13 @@ class Main:
         pygame.display.set_caption('Лабиринт')
         self.move_timer = 0
         self.flag = False
-        self.make_board()
         while running:
             if flag_run == 0:
                 Start(self.screen).draw_screen()
                 Start(self.screen).events()
                 flag_run = Start(self.screen).get_flag()
                 self.screen.fill('black')
+
             elif flag_run == 3:
                 Levels(self.screen).draw_screen()
                 Levels(self.screen).events()
@@ -102,7 +109,11 @@ class Main:
                     flag_run = Win(self.screen).get_flag()
 
             elif flag_run == 1:
+
                 for event in pygame.event.get():
+                    if new_game:
+                        self.make_board()
+                        new_game = False
                     if event.type == pygame.QUIT:
                         running = False
                     if event.type == pygame.KEYDOWN:
@@ -118,7 +129,8 @@ class Main:
                 # if self.move_timer == fps // 8:
                 #     self.move_timer = 0
                 #     sprites.update(pygame.key.get_pressed())
-                self.draw_screen()
+                self.draw_board()
+                player.update()
                 pygame.display.flip()
                 clock.tick(fps)
                 self.move_timer += 1
@@ -130,14 +142,17 @@ class Main:
 
 
     def make_board(self):
+        f = ''
         global width, height, board, walls, end, number
+        open_file()
         for i in range(len(board[number][1:])):
             r, b, l, t = True, True, True, True
             for j in range(len(board[number][1:][i])):
-                print(i, j, board[number][1:][i][j])
+                print(board[number][1:][i][j][0])
                 if board[number][1:][i][j][0] == width:
                     end = [i % width + 1, i // width]
                     f = [i, j]
+                    print(1)
 
                 if board[number][1:][i][j][0] == i % width and board[number][1:][i][j][1] == i // width + 1:
                     b = False
@@ -157,6 +172,7 @@ class Main:
 
     def draw_board(self):
         global walls, width, height, left, top, cell_size
+        self.screen.fill('black')
         for i in range(len(walls)):
             if walls[i][0]:
                 pygame.draw.line(self.screen, 'white', (left + (i % width + 1) * cell_size,
@@ -189,45 +205,56 @@ class Player(pygame.sprite.Sprite):
 
     def __init__(self, *group):
         super().__init__(*group)
+        global new_game, location
         self.image_rabbit = Player.image
         self.rect = self.image_rabbit.get_rect()
 
         self.rect.x = 10
         self.rect.y = 50
-        self.location = [-1, 0]
+        location = [-1, 0]
         self.start = ''
 
+
     def get_location(self):
-        return self.location
+        global location
+        return location
 
     def get_flag(self):
         global flag_run
         return flag_run
 
-    def update(self, keys):
-        global width, flag_run, end
+    
+
+    def update(self, keys=None):
+        global width, flag_run, end, new_game, location
         self.start = 'start'
-        if keys[pygame.K_UP]:
-            if ([self.location[0], self.location[1] - 1] in board[number][1:][self.location[1] * width + self.location[0]]
-                    and self.location != [-1, 0]):
-                self.location[1] -= 1
+        if new_game:
+            location = [-1, 0]
+            self.rect.x = 10
+            self.rect.y = 50
+        if not keys:
+            pass
+        elif keys[pygame.K_UP]:
+            if ([location[0], location[1] - 1] in board[number][1:][location[1] * width + location[0]]
+                    and location != [-1, 0]):
+                location[1] -= 1
                 self.rect.y -= cell_size
         elif keys[pygame.K_DOWN]:
-            if ([self.location[0], self.location[1] + 1] in board[number][1:][self.location[1] * width + self.location[0]]
-                    and self.location != [-1, 0]):
-                self.location[1] += 1
+            if ([location[0], location[1] + 1] in board[number][1:][location[1] * width + location[0]]
+                    and location != [-1, 0]):
+                location[1] += 1
                 self.rect.y += cell_size
         elif keys[pygame.K_LEFT]:
-            if ([self.location[0] - 1, self.location[1]] in board[number][1:][self.location[1] * width + self.location[0]]
-                    and self.location != [-1, 0]):
-                self.location[0] -= 1
+            if ([location[0] - 1, location[1]] in board[number][1:][location[1] * width + location[0]]
+                    and location != [-1, 0]):
+                location[0] -= 1
                 self.rect.x -= cell_size
         elif keys[pygame.K_RIGHT]:
-            if self.location[0] + 1 == end[0] and self.location[1] == end[1]:
+            if location[0] + 1 == end[0] and location[1] == end[1]:
                 flag_run = 4
-            elif [self.location[0] + 1, self.location[1]] in board[number][1:][self.location[1] * width + self.location[0]] \
-               or self.location == [-1, 0]:
-                self.location[0] += 1
+            elif [location[0] + 1, location[1]] in board[number][1:][location[1] * width + location[0]] \
+               or location == [-1, 0]:
+                location[0] += 1
                 self.rect.x += cell_size
 
 
@@ -383,7 +410,7 @@ class Levels:
         global flag_run
         return flag_run
     def events(self):
-        global flag_run, number
+        global flag_run, number, new_game
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -393,6 +420,7 @@ class Levels:
                 self.mouse_x, self.mouse_y = pygame.mouse.get_pos()
                 for i in range(5):
                     if 50 + i * 100 <= self.mouse_x <= 150 + i * 50 and 275 <= self.mouse_y <= 325:
+                        new_game = True
                         flag_run = 1
                         number = i
 
