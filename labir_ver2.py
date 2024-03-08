@@ -252,22 +252,22 @@ class Player(pygame.sprite.Sprite):
             self.rect.y = 50
         if not keys:
             pass
-        elif keys[pygame.K_UP]:
+        elif keys[pygame.K_w]:
             if ([location[0], location[1] - 1] in board[number][1:][location[1] * width + location[0]]
                     and location != [-1, 0]):
                 location[1] -= 1
                 self.rect.y -= cell_size
-        elif keys[pygame.K_DOWN]:
+        elif keys[pygame.K_s]:
             if ([location[0], location[1] + 1] in board[number][1:][location[1] * width + location[0]]
                     and location != [-1, 0]):
                 location[1] += 1
                 self.rect.y += cell_size
-        elif keys[pygame.K_LEFT]:
+        elif keys[pygame.K_a]:
             if ([location[0] - 1, location[1]] in board[number][1:][location[1] * width + location[0]]
                     and location != [-1, 0]):
                 location[0] -= 1
                 self.rect.x -= cell_size
-        elif keys[pygame.K_RIGHT]:
+        elif keys[pygame.K_d]:
             if location[0] + 1 == end[0] and location[1] == end[1]:
                 flag_run = 4
                 end_game = True
