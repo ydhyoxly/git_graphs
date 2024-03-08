@@ -11,12 +11,13 @@ width, height = 0, 0
 walls = []
 board = [[] for i in range(5)]
 path = ''
-end = []
+end = [0, 0]
 location = [-1, 0]
 directory = ''
 flag_run = 0
 number = 0
-new_game = True
+end_game = False
+enemy_loc = [0, 0]
 
 
 def open_file():
@@ -27,7 +28,7 @@ def open_file():
         lab = f.readlines()
     width, height, cell_size = map(int, lab[0].split())
     new = 1
-    number = 0
+    curr_num = 0
     for i in range(len(lab)):
         ar = True
         if new:
@@ -36,7 +37,7 @@ def open_file():
         else:
 
             if lab[i][0] == '*':
-                number += 1
+                curr_num += 1
                 new = 1
                 ar = False
             else:
@@ -47,9 +48,8 @@ def open_file():
                 for j in range(len(side)):
                     side[j] = list(map(int, side[j].split(', ')))
         if ar:
-            board[number].append(side)
-    print(board[0])
-    number = 0
+            board[curr_num].append(side)
+
 
 
 def load_image(name, colorkey=None):
@@ -70,7 +70,7 @@ def load_image(name, colorkey=None):
 
 class Main:
     def __init__(self, screen):
-        global flag_run, new_game
+        global flag_run, new_game, enemy_loc, end_game
 
         self.screen = screen
         running = True
@@ -78,12 +78,10 @@ class Main:
         enemy = Enemy()
         self.sprites = pygame.sprite.Group()
         self.sprites.add(player)
-        self.sprites.add(enemy)
         self.move_timer = 0
         MYEVENTTYPE = pygame.USEREVENT + 1
         start = False
         flag_run = 0
-        pygame.time.set_timer(MYEVENTTYPE, 3000)
 
         fps = 60
         clock = pygame.time.Clock()
@@ -92,6 +90,11 @@ class Main:
         self.move_timer = 0
         self.flag = False
         while running:
+            if end_game:
+                enemy.update([0, 0])
+                player.update()
+                end_game = False
+
             if flag_run == 0:
                 Start(self.screen).draw_screen()
                 Start(self.screen).events()
@@ -99,19 +102,24 @@ class Main:
                 self.screen.fill('black')
 
             elif flag_run == 3:
+                new_game = True
                 Levels(self.screen).draw_screen()
                 Levels(self.screen).events()
                 flag_run = Levels(self.screen).get_flag()
 
             elif flag_run == 4:
-                    Win(self.screen).draw_screen()
-                    Win(self.screen).events()
-                    flag_run = Win(self.screen).get_flag()
+                new_game = True
+                Win(self.screen).draw_screen()
+                Win(self.screen).events()
+                flag_run = Win(self.screen).get_flag()
+                start = False
 
             elif flag_run == 1:
-
+                self.sprites.add(player)
                 for event in pygame.event.get():
                     if new_game:
+                        pygame.time.set_timer(MYEVENTTYPE, 3000)
+                        enemy_loc = [0, 0]
                         self.make_board()
                         new_game = False
                     if event.type == pygame.QUIT:
@@ -120,10 +128,11 @@ class Main:
                         self.move_timer = 0
                         player.update(pygame.key.get_pressed())
                         rer = player.get_location()
-                        Enemy().update([0, 0], rer)
+                        Enemy().update(rer)
 
-                    # if event.type == MYEVENTTYPE:
-                    #     start = True
+                    if event.type == MYEVENTTYPE:
+                        start = True
+                        self.sprites.add(enemy)
                 if start:
                     enemy.move()
                 # if self.move_timer == fps // 8:
@@ -131,33 +140,40 @@ class Main:
                 #     sprites.update(pygame.key.get_pressed())
                 self.draw_board()
                 player.update()
+                self.sprites.draw(self.screen)
                 pygame.display.flip()
                 clock.tick(fps)
                 self.move_timer += 1
                 flag_run = player.get_flag()
+
             elif flag_run == 2:
+                new_game = True
+
                 EndGame(self.screen).draw_screen()
                 EndGame(self.screen).events()
                 flag_run = EndGame(self.screen).get_flag()
+                start = False
+
 
 
     def make_board(self):
         f = ''
         global width, height, board, walls, end, number
+        walls = []
         open_file()
         for i in range(len(board[number][1:])):
             r, b, l, t = True, True, True, True
             for j in range(len(board[number][1:][i])):
-                print(board[number][1:][i][j][0])
                 if board[number][1:][i][j][0] == width:
                     end = [i % width + 1, i // width]
                     f = [i, j]
-                    print(1)
-
-                if board[number][1:][i][j][0] == i % width and board[number][1:][i][j][1] == i // width + 1:
-                    b = False
-                elif board[number][1:][i][j][0] == i % width + 1 and board[number][1:][i][j][1] == i // width:
                     r = False
+
+
+                if board[number][1:][i][j][0] == i % width + 1 and board[number][1:][i][j][1] == i // width:
+                    r = False
+                elif board[number][1:][i][j][0] == i % width and board[number][1:][i][j][1] == i // width + 1:
+                    b = False
                 elif board[number][1:][i][j][0] == i % width and board[number][1:][i][j][1] == i // width - 1:
                     t = False
                 elif board[number][1:][i][j][0] == i % width - 1 and board[number][1:][i][j][1] == i // width:
@@ -223,10 +239,12 @@ class Player(pygame.sprite.Sprite):
         global flag_run
         return flag_run
 
-    
+
 
     def update(self, keys=None):
-        global width, flag_run, end, new_game, location
+        global width, flag_run, end, new_game, location, end_game
+        if end_game:
+            self.kill()
         self.start = 'start'
         if new_game:
             location = [-1, 0]
@@ -252,6 +270,7 @@ class Player(pygame.sprite.Sprite):
         elif keys[pygame.K_RIGHT]:
             if location[0] + 1 == end[0] and location[1] == end[1]:
                 flag_run = 4
+                end_game = True
             elif [location[0] + 1, location[1]] in board[number][1:][location[1] * width + location[0]] \
                or location == [-1, 0]:
                 location[0] += 1
@@ -275,13 +294,19 @@ class Enemy(pygame.sprite.Sprite):
         self.location = [0, 0]
         self.used = ['' for _ in range(width * height)]
 
-    def update(self, location, end):
-        global board, path
+    def update(self, end):
+        global board, path, number, enemy_loc, end_game
+        if end_game:
+            self.rect.x = 50
+            self.rect.y = 50
+            enemy_loc = [0, 0]
+            self.kill()
+        path = []
         self.used = ['' for _ in range(width * height)]
-        location = location[1] * self.width + location[0]
+        enemy_loc_1 = enemy_loc[1] * self.width + enemy_loc[0]
         end = end[1] * self.width + end[0]
-        queue = collections.deque([location])
-        self.used[location] = str(location)
+        queue = collections.deque([enemy_loc_1])
+        self.used[enemy_loc_1] = str(enemy_loc_1)
         while queue:
             vertex = queue.popleft()
             for neighbour in board[number][1:][vertex]:
@@ -299,38 +324,44 @@ class Enemy(pygame.sprite.Sprite):
             path[i] = [path[i] % self.width, path[i] // self.width]
 
     def move(self):
-        global directory, flag_run
+        global directory, flag_run, enemy_loc, end_game
+        print(path)
         if len(path) == 1:
+            pass
             flag_run = 2
+            end_game = True
         else:
-            r = path[1]
-            if self.location == r:
-                del path[1]
+            r = path[0]
+            if enemy_loc == r:
+                del path[0]
 
-            elif r[0] == self.location[0] and r[1] == self.location[1] + 1:
+            elif r[0] == enemy_loc[0] and r[1] == enemy_loc[1] + 1:
                 directory = 'down'
 
-            elif r[0] == self.location[0] and r[1] == self.location[1] - 1:
+            elif r[0] == enemy_loc[0] and r[1] == enemy_loc[1] - 1:
                 directory = 'up'
 
-            elif r[0] == self.location[0] + 1 and r[1] == self.location[1]:
+            elif r[0] == enemy_loc[0] + 1 and r[1] == enemy_loc[1]:
                 directory = 'right'
 
-            elif r[0] == self.location[0] - 1 and r[1] == self.location[1]:
+            elif r[0] == enemy_loc[0] - 1 and r[1] == enemy_loc[1]:
                 directory = 'left'
-            self.location = [(self.rect.x - self.left) // (self.cell_size),
-                             (self.rect.centery - self.top) // (self.cell_size)]
+            if (self.rect.x - self.left) % (self.cell_size) == 0:
+                enemy_loc[0] = (self.rect.x - self.left) // (self.cell_size)
+            if (self.rect.y - self.top) % (self.cell_size) == 0:
+                enemy_loc[1] = (self.rect.y - self.top) // (self.cell_size)
             self.run_cat()
 
     def run_cat(self):
         if directory == 'right':
-            self.rect.x += self.cell_size // 20
+            self.rect.x += self.cell_size // 15
         elif directory == 'left':
-            self.rect.x -= self.cell_size // 20
-        elif directory == 'top':
-            self.rect.y -= self.cell_size // 20
+            self.rect.x -= self.cell_size // 15
+        elif directory == 'up':
+            self.rect.y -= self.cell_size // 15
         elif directory == 'down':
-            self.rect.y += self.cell_size // 20
+            self.rect.y += self.cell_size // 15
+
 
 class Start:
     def __init__(self, screen):
@@ -380,12 +411,11 @@ class EndGame:
         h = text.get_rect().height
         self.screen.blit(text, (300 - w // 2, 300 - h // 2))
         font = pygame.font.Font(None, 36)
-        text = font.render('Try again', True, 'red')
-        self.screen.blit(text, (120, 415))
         text = font.render('Levels', True, 'red')
-        self.screen.blit(text, (380, 415))
-        pygame.draw.rect(self.screen, 'red', (100, 400, 150, 50), 3)
-        pygame.draw.rect(self.screen, 'red', (350, 400, 150, 50), 3)
+        self.screen.blit(text, (250, 415))
+        pygame.draw.rect(self.screen, 'red', (200, 400, 200, 50), 3)
+
+        # pygame.draw.rect(self.screen, 'red', (350, 400, 200, 50), 3)
         pygame.display.flip()
 
     def events(self):
@@ -395,8 +425,10 @@ class EndGame:
                 self.running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.mouse_x, self.mouse_y = pygame.mouse.get_pos()
-                if 100 <= self.mouse_x <= 250 and 400 <= self.mouse_y <= 450:
-                    flag_run = 1
+                if 200 <= self.mouse_x <= 400 and 400 <= self.mouse_y <= 450:
+                    self.screen.fill('black')
+
+                    flag_run = 3
 
     def get_flag(self):
         global flag_run
@@ -405,6 +437,7 @@ class EndGame:
 class Levels:
     def __init__(self, screen):
         self.screen = screen
+
 
     def get_flag(self):
         global flag_run
@@ -418,8 +451,8 @@ class Levels:
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.mouse_x, self.mouse_y = pygame.mouse.get_pos()
-                for i in range(5):
-                    if 50 + i * 100 <= self.mouse_x <= 150 + i * 50 and 275 <= self.mouse_y <= 325:
+                for i in range(3):
+                    if 50 + i * 200 <= self.mouse_x <= 150 + i * 200 and 275 <= self.mouse_y <= 325:
                         new_game = True
                         flag_run = 1
                         number = i
@@ -428,12 +461,12 @@ class Levels:
 
     def draw_screen(self):
         for i in range(5):
-            pygame.draw.rect(self.screen, 'white', (50 + 100 * i, 275, 50, 50), 3)
+            pygame.draw.rect(self.screen, 'white', (50 + 200 * i, 275, 50, 50), 3)
 
 
             font = pygame.font.Font(None, 55)
             text = font.render(str(i + 1), True, 'white')
-            self.screen.blit(text, (60 + 100 * i, 280))
+            self.screen.blit(text, (65 + 200 * i, 280))
             pygame.display.flip()
 
 
@@ -465,7 +498,6 @@ class Win:
                 self.mouse_x, self.mouse_y = pygame.mouse.get_pos()
                 if 200 <= self.mouse_x <= 400 and 400 <= self.mouse_y <= 450:
                     flag_run = 3
-                # if 50 + i * 100 <= self.mouse_x <= 150 + i * 50 and 275 <= self.mouse_y <= 325:
 
     def get_flag(self):
         global flag_run
