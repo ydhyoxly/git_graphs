@@ -12,6 +12,9 @@ walls = []
 board = [[] for i in range(5)]
 path = ''
 end = [0, 0]
+
+
+
 location = [-1, 0]
 directory = ''
 flag_run = 0
@@ -123,7 +126,8 @@ class Main:
                         self.make_board()
                         new_game = False
                     if event.type == pygame.QUIT:
-                        running = False
+                        pygame.quit()
+                        sys.exit()
                     if event.type == pygame.KEYDOWN:
                         self.move_timer = 0
                         player.update(pygame.key.get_pressed())
@@ -374,7 +378,8 @@ class Start:
         global flag_run
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.running = False
+                pygame.quit()
+                sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.mouse_x, self.mouse_y = pygame.mouse.get_pos()
                 if 169 <= self.mouse_x <= 411 and 278 <= self.mouse_y <= 322:
@@ -422,7 +427,8 @@ class EndGame:
         global flag_run
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.running = False
+                pygame.quit()
+                sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.mouse_x, self.mouse_y = pygame.mouse.get_pos()
                 if 200 <= self.mouse_x <= 400 and 400 <= self.mouse_y <= 450:
@@ -447,7 +453,8 @@ class Levels:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pass
+                pygame.quit()
+                sys.exit()
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.mouse_x, self.mouse_y = pygame.mouse.get_pos()
@@ -492,7 +499,8 @@ class Win:
         global flag_run
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pass
+                pygame.quit()
+                sys.exit()
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.mouse_x, self.mouse_y = pygame.mouse.get_pos()
@@ -507,6 +515,3 @@ class Win:
 
 if __name__ == '__main__':
     Main(screen)
-
-
-
