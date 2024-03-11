@@ -121,7 +121,7 @@ class Main:
                 self.sprites.add(player)
                 for event in pygame.event.get():
                     if new_game:
-                        pygame.time.set_timer(MYEVENTTYPE, 3000)
+                        pygame.time.set_timer(MYEVENTTYPE, 1000)
                         enemy_loc = [0, 0]
                         self.make_board()
                         new_game = False
