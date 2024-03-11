@@ -84,6 +84,7 @@ class Main:
         self.move_timer = 0
         MYEVENTTYPE = pygame.USEREVENT + 1
         start = False
+        new_time = True
         flag_run = 0
 
         fps = 60
@@ -105,6 +106,7 @@ class Main:
                 self.screen.fill('black')
 
             elif flag_run == 3:
+                new_time = True
                 new_game = True
                 Levels(self.screen).draw_screen()
                 Levels(self.screen).events()
@@ -121,14 +123,17 @@ class Main:
                 self.sprites.add(player)
                 for event in pygame.event.get():
                     if new_game:
-                        pygame.time.set_timer(MYEVENTTYPE, 1500)
                         enemy_loc = [0, 0]
                         self.make_board()
                         new_game = False
+
                     if event.type == pygame.QUIT:
                         pygame.quit()
                         sys.exit()
                     if event.type == pygame.KEYDOWN:
+                        if new_time:
+                            pygame.time.set_timer(MYEVENTTYPE, 1500)
+                            new_time = False
                         self.move_timer = 0
                         player.update(pygame.key.get_pressed())
                         rer = player.get_location()
